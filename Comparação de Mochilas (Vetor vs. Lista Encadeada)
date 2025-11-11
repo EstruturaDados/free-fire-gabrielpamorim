@@ -1,0 +1,173 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <time.h> // Para medir tempo (opcional, mas bom para eficiência)
+
+// --- Definição das Structs ---
+
+// 1. Struct para o Item
+typedef struct {
+    char nome[30];
+    char tipo[20]; // Ex: arma, municao, cura
+    int quantidade;
+} Item;
+
+// 2. Struct para o Nó da Lista Encadeada
+typedef struct No {
+    Item dados;
+    struct No *proximo;
+} No;
+
+
+// --- Constantes e Variáveis Globais ---
+#define CAPACIDADE_MAXIMA 15 // Capacidade para o vetor
+Item mochilaVetor[CAPACIDADE_MAXIMA];
+int contadorVetor = 0;
+No* headLista = NULL; // Ponteiro inicial para a Lista Encadeada
+
+// Variáveis para Contagem de Comparações (Requisito)
+long long comparacoesBusca = 0; 
+long long comparacoesOrdenacao = 0;
+
+
+// --- Protótipos das Funções ---
+
+// Funções de Interface
+void exibirMenuPrincipal();
+void limparBuffer();
+void inicializarItem(Item* item, const char* nome, const char* tipo, int quantidade);
+
+// Funções do Vetor
+void inserirItemVetor(const Item* item);
+bool removerItemVetor(const char* nome);
+void listarItensVetor();
+void ordenarVetor();
+int buscarSequencialVetor(const char* nome);
+int buscarBinariaVetor(const char* nome);
+
+// Funções da Lista Encadeada
+void inserirItemLista(const Item* item);
+bool removerItemLista(const char* nome);
+void listarItensLista();
+No* buscarSequencialLista(const char* nome);
+void liberarLista(No* head);
+
+
+// --- Implementação das Funções de Apoio ---
+
+void limparBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF) {}
+}
+
+void inicializarItem(Item* item, const char* nome, const char* tipo, int quantidade) {
+    strncpy(item->nome, nome, 29);
+    item->nome[29] = '\0';
+    strncpy(item->tipo, tipo, 19);
+    item->tipo[19] = '\0';
+    item->quantidade = quantidade;
+}
+
+
+// =========================================================================
+//                  I. IMPLEMENTAÇÃO DO VETOR (SEQUENCIAL)
+// =========================================================================
+
+/**
+ * @brief Insere um item na primeira posição livre do vetor.
+ */
+void inserirItemVetor(const Item* item) {
+    if (contadorVetor >= CAPACIDADE_MAXIMA) {
+        printf("\n❌ Erro: Mochila Estatica (Vetor) Cheia! Capacidade maxima: %d\n", CAPACIDADE_MAXIMA);
+        return;
+    }
+    // Adiciona o item na próxima posição e incrementa o contador
+    mochilaVetor[contadorVetor] = *item;
+    contadorVetor++;
+    printf("✅ Item '%s' inserido no Vetor. Posicao: %d\n", item->nome, contadorVetor - 1);
+}
+
+/**
+ * @brief Remove um item do vetor pelo nome.
+ * @return true se o item foi removido, false caso contrário.
+ */
+bool removerItemVetor(const char* nome) {
+    int i;
+    // 1. Busca Sequencial para localizar a posição (sem contar comparações)
+    for (i = 0; i < contadorVetor; i++) {
+        if (strcmp(mochilaVetor[i].nome, nome) == 0) {
+            break; // Item encontrado na posição 'i'
+        }
+    }
+
+    if (i == contadorVetor) {
+        return false; // Não encontrado
+    }
+
+    // 2. Remoção (Move os itens posteriores uma posição para frente)
+    for (int j = i; j < contadorVetor - 1; j++) {
+        mochilaVetor[j] = mochilaVetor[j + 1];
+    }
+    contadorVetor--;
+    return true;
+}
+
+/**
+ * @brief Lista todos os itens do vetor.
+ */
+void listarItensVetor() {
+    printf("\n--- Conteudo da MOCHILA VETOR (%d/%d) ---\n", contadorVetor, CAPACIDADE_MAXIMA);
+    if (contadorVetor == 0) {
+        printf("A mochila esta vazia.\n");
+    }
+    for (int i = 0; i < contadorVetor; i++) {
+        printf("  [%-2d] %-20s | Tipo: %-10s | Qtd: %d\n", 
+               i, mochilaVetor[i].nome, mochilaVetor[i].tipo, mochilaVetor[i].quantidade);
+    }
+    printf("-----------------------------------------\n");
+}
+
+/**
+ * @brief Ordena o vetor pelo nome (usando Bubble Sort para simplicidade).
+ */
+void ordenarVetor() {
+    comparacoesOrdenacao = 0; // Zera o contador de ordenação
+    Item temp;
+    
+    // Bubble Sort
+    for (int i = 0; i < contadorVetor - 1; i++) {
+        for (int j = 0; j < contadorVetor - 1 - i; j++) {
+            comparacoesOrdenacao++; // Conta a comparação
+            if (strcmp(mochilaVetor[j].nome, mochilaVetor[j + 1].nome) > 0) {
+                // Troca (Swap)
+                temp = mochilaVetor[j];
+                mochilaVetor[j] = mochilaVetor[j + 1];
+                mochilaVetor[j + 1] = temp;
+            }
+        }
+    }
+    printf("✅ Vetor ordenado com sucesso. Comparações: %lld\n", comparacoesOrdenacao);
+}
+
+/**
+ * @brief Busca Sequencial (Linear) no vetor e conta as comparações.
+ * @return O índice do item, ou -1 se não encontrado.
+ */
+int buscarSequencialVetor(const char* nome) {
+    comparacoesBusca = 0; // Zera o contador de busca
+    
+    for (int i = 0; i < contadorVetor; i++) {
+        comparacoesBusca++; // Conta a comparação
+        if (strcmp(mochilaVetor[i].nome, nome) == 0) {
+            return i; // Item encontrado
+        }
+    }
+    return -1; // Não encontrado
+}
+
+/**
+ * @brief Busca Binária no vetor (requer que o vetor esteja ordenado) e conta as comparações.
+ * @return O índice do item, ou -1 se não encontrado.
+ */
+int buscarBinariaVetor(
